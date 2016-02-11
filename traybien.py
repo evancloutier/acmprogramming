@@ -1,136 +1,94 @@
 import copy
 
-tray = [
-    [None, None, None],
-    [None, None, None]
-    
-]
+class TrayBien:
+    def __init__(self, depth, width, *args):
+        self.depth = depth
+        self.width = width
+        self.max_block_num = depth * width - 1
+        self.num_unique_valid_arrangements = 0
+        self.tray = [[None for w in range(width)] for d in range(depth)]
+        self.block_possibilities = ['1', '2t', '2b', '2l', '2r']
+        self.all_arrangements = []
+        self.all_arrangements_set = set()
 
-combo_set = set()
 
-block_possibilities = ['1', '2t', '2b', '2l', '2r']
+    def get_coords(self, count):
+        x = count % self.width
+        y = count // self.width
+        return x,y
 
-all_possibilities = []
-
-def get_coords(count):
-    x = count % 3
-    y = count // 3
-    return [x,y]
-
-def generate_block(count, tray, block_possibilities, all_possibilities):
-    tray_copy = copy.deepcopy(tray)
-    x,y = get_coords(count)
-    
-    for symbol in block_possibilities:
-        tray_copy[y][x] = symbol
-        #another_tray_copy = copy.deepcopy(tray)
-        if count != 5:
-            generate_block(count + 1, tray_copy, block_possibilities, all_possibilities)
-        all_possibilities.append(tray_copy)
+    def generate_block(self, tray, block_num):
         tray_copy = copy.deepcopy(tray)
-        #another_tray_copy = copy.deepcopy(tray_copy)
-        #print tray_copy
-        
-                
-def is_illegal(arr):
+        x,y = self.get_coords(block_num)
 
-    #print arr
-    for y in range(2):
-        for x in range(3):
-            if arr[y][x] is None:
-                return True
+        for symbol in self.block_possibilities:
+            tray_copy[y][x] = symbol
+            if block_num != self.max_block_num:
+                self.generate_block(tray_copy, block_num + 1)
+            self.all_arrangements.append(tray_copy)
+            tray_copy = copy.deepcopy(tray)
 
-    for y in range(2):
-        if arr[y][0] == '2r':
-            return True
-        if arr[y][2] == '2l':
-            return True
-        
-    for x in range(3):
-        if arr[1][x] == '2t':
-            return True
-        if arr[0][x] == '2b':
-            return True
-        if arr[1][x] == '2b' and arr[0][x] != '2t':
-            return True
+    def is_legal(self, tray):
+        for y in range(self.depth):
+            for x in range(self.width):
+                if tray[y][x] is None:
+                    return False
 
-        if arr[0][x] == '2t' and arr[1][x] != '2b':
-            return True
+        for y in range(self.depth):
+            if tray[y][0] == '2r':
+                return False
+            if tray[y][self.width - 1] == '2l':
+                return False
 
-    for x in range(2):
-        for y in range(2):
-            if arr[y][x] == '2l' and arr[y][x+1] != '2r':
-                return True
+        for x in range(self.width):
+            if tray[self.depth - 1][x] == '2t':
+                return False
+            if tray[0][x] == '2b':
+                return False
+            for y in range(self.depth - 1):
+                if tray[y + 1][x] == '2b' and tray[y][x] != '2t':
+                    return False
+                if tray[y][x] == '2t' and tray[y + 1][x] != '2b':
+                    return False
 
-    for x in range(1,3):
-        for y in range(2):
-            if arr[y][x] == '2r' and arr[y][x-1] != '2l':
-                return True
+        for x in range(self.width - 1):
+            for y in range(self.depth):
+                if tray[y][x] == '2l' and tray[y][x + 1] != '2r':
+                    return False
+                if tray[y][x + 1] == '2r' and tray[y][x] != '2l':
+                    return False
+        return True
 
-    return False 
+    def conv_to_tup(self, lst):
+        lst = [item for sublist in lst for item in sublist]
+        tup = tuple(lst)
+        return tup
 
-def conv_to_tup(lst):
-    lst = [item for sublist in lst for item in sublist]
-    tup = tuple(lst)
-    #print tup
-    return tup
-
-
-def gen_set(all_possibilities):
-    all_sets = set()
-
-    for poss in all_possibilities:
-        #print poss
-        tup = conv_to_tup(poss)
-        all_sets.add(tup)
-
-    return all_sets
+    def gen_set(self):
+        for tray in self.all_arrangements:
+            temp_tray = self.conv_to_tup(tray)
+            self.all_arrangements_set.add(temp_tray)
+        self.num_unique_valid_arrangements = len(self.all_arrangements_set)
 
 
-def remove_illegals(all_possibilities):
-    new_list = []
-    for idx, arrangement in enumerate(all_possibilities):
-        #print arrangement
-        if is_illegal(arrangement) is False:
-            #print arrangement
-            new_list.append(arrangement)
-
-    return new_list
-'''
-t = [
-    ['1', '2t','1'],
-    ['1', '1', '1']
-]
+    def remove_illegal_trays(self):
+        temp_all_arrangements = []
+        for arrangement in self.all_arrangements:
+            if self.is_legal(arrangement) is True:
+                temp_all_arrangements.append(arrangement)
+        self.all_arrangements = temp_all_arrangements
 
 
-if is_illegal(t) is False:
-    print "False"
-'''
+new_tray = TrayBien(2,5)
 
-'''
-x = conv_to_tup([[1,2],[3,4]])
-s = set()
-s.add(x)
-x = conv_to_tup([[1,2],[3,5]])
-s.add(x)
+new_tray.generate_block(new_tray.tray, 0)
 
-print s
-'''
+new_tray.remove_illegal_trays()
+new_tray.gen_set()
 
-generate_block(0, tray, block_possibilities, all_possibilities)
 
-res = remove_illegals(all_possibilities)
 
-res_sets = gen_set(res)
+for i in range(len(new_tray.all_arrangements_set)):
+    print new_tray.all_arrangements_set.pop()
 
-for p in res_sets:
-    print p
-
-print len(res_sets)
-
-#res = remove_illegals(all_possibilities)
-#print res
-#x = gen_set(all_possibilities)
-
-#for line in all_possibilities:
-#    print line
+print new_tray.num_unique_valid_arrangements
